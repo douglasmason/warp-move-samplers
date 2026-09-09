@@ -2,7 +2,7 @@
   "id": "warpmelodic",
   "name": "Melodic Sampler+",
   "abbrev": "MS+",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Move Melodic Sampler-style shell with cached constant-duration pitch mapping",
   "author": "douglasmason",
   "license": "MIT",
@@ -28,7 +28,7 @@
   },
   "capabilities": {
     "audio_out": true,
-    "audio_in": true,
+    "audio_in": false,
     "midi_in": true,
     "midi_out": false,
     "chainable": true,
