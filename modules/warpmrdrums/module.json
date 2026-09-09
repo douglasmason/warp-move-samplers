@@ -2,7 +2,7 @@
   "id": "warpmrdrums",
   "name": "WarpMrDrums",
   "abbrev": "WMD",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "16-pad sampler with per-pad cached warp/root/length state",
   "author": "douglasmason",
   "license": "MIT",
