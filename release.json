@@ -1,4 +1,7 @@
 {
+  "version": "0.1.1",
+  "name": "WarpMrSample",
+  "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.1/warpmrsample-v0.1.1-module.tar.gz",
   "modules": {
     "warpmrsample": {
       "version": "0.1.1",
