@@ -1,0 +1,51 @@
+{
+  "id": "warpmelodic",
+  "name": "Melodic Sampler+",
+  "abbrev": "MS+",
+  "version": "0.1.1",
+  "description": "Move Melodic Sampler-style shell with cached constant-duration pitch mapping",
+  "author": "douglasmason",
+  "license": "MIT",
+  "dsp": "dsp.so",
+  "api_version": 2,
+  "defaults": {
+    "sample_path": "",
+    "warp": "on",
+    "auto_root": "on",
+    "default_root": 60,
+    "root_note": 60,
+    "trim_start": 0.0,
+    "trim_end": 1.0,
+    "length_pct": 100.0,
+    "length_ms": 1000.0,
+    "grain_ms": 45.0,
+    "transpose": 0,
+    "fine_tune": 0,
+    "attack_ms": 5.0,
+    "release_ms": 150.0,
+    "gain": 1.0,
+    "polyphony": 8
+  },
+  "capabilities": {
+    "audio_out": true,
+    "audio_in": true,
+    "midi_in": true,
+    "midi_out": false,
+    "chainable": true,
+    "component_type": "sound_generator",
+    "ui_hierarchy": {
+      "levels": {
+        "root": {
+          "name": "Melodic Sampler+",
+          "params": [{"label":"Sample","level":"sample"},{"label":"Warp","level":"warp"},{"label":"Tuning","level":"tuning"},{"label":"Amp","level":"amp"},{"label":"Capture","level":"capture"}],
+          "knobs": ["trim_start","trim_end","attack_ms","release_ms","gain","transpose","grain_ms","length_pct"]
+        },
+        "sample": {"name":"Sample","params":["sample_path","trim_start","trim_end"],"knobs":["trim_start","trim_end"]},
+        "warp": {"name":"Warp","params":["warp","length_pct","length_ms","grain_ms","root_note","rebuild_cache"],"knobs":["warp","length_pct","length_ms","grain_ms","root_note"]},
+        "tuning": {"name":"Tuning","params":["root_note","transpose","fine_tune"],"knobs":["root_note","transpose","fine_tune"]},
+        "amp": {"name":"Amp","params":["attack_ms","release_ms","gain","polyphony"],"knobs":["attack_ms","release_ms","gain","polyphony"]},
+        "capture": {"name":"Capture / Root","params":["record","auto_root","default_root","analyze_root"],"knobs":["record","auto_root","default_root","analyze_root"]}
+      }
+    }
+  }
+}

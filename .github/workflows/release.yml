@@ -1,0 +1,70 @@
+name: Build and publish Warp Move Samplers
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  VERSION: 0.1.1
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ python3 file git ca-certificates gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Run host tests
+        run: ./tests/run.sh
+
+      - name: Fetch pinned Bungee
+        run: ./scripts/fetch_bungee.sh
+
+      - name: Build ARM64 modules
+        env:
+          CROSS_PREFIX: aarch64-linux-gnu-
+        run: ./scripts/build_move.sh
+
+      - name: Version and verify release assets
+        run: |
+          set -euo pipefail
+          for id in warpmrsample warpmelodic warpmrdrums warpdrumkit; do
+            src="dist/${id}-module.tar.gz"
+            dst="dist/${id}-v${VERSION}-module.tar.gz"
+            mv "$src" "$dst"
+            gzip -t "$dst"
+            rm -rf "/tmp/${id}"
+            mkdir -p "/tmp/${id}"
+            tar -xzf "$dst" -C "/tmp/${id}"
+            test -f "/tmp/${id}/${id}/module.json"
+            test -f "/tmp/${id}/${id}/dsp.so"
+            file "/tmp/${id}/${id}/dsp.so" | grep -q 'ARM aarch64'
+            python3 - "$id" "$VERSION" <<'PYVERIFY'
+import json, pathlib, sys
+module_id, version = sys.argv[1], sys.argv[2]
+manifest = json.loads(pathlib.Path(f"/tmp/{module_id}/{module_id}/module.json").read_text())
+assert manifest["id"] == module_id
+assert manifest["version"] == version
+PYVERIFY
+          done
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          assets=(dist/*-v${VERSION}-module.tar.gz)
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" "${assets[@]}" --clobber
+          else
+            gh release create "v${VERSION}" "${assets[@]}" \
+              --title "Warp Move Samplers v${VERSION}" \
+              --notes "Four Schwung sampler variants with constant-duration warped pitch playback."
+          fi
