@@ -47,13 +47,7 @@ jobs:
             test -f "/tmp/${id}/${id}/module.json"
             test -f "/tmp/${id}/${id}/dsp.so"
             file "/tmp/${id}/${id}/dsp.so" | grep -q 'ARM aarch64'
-            python3 - "$id" "$VERSION" <<'PYVERIFY'
-import json, pathlib, sys
-module_id, version = sys.argv[1], sys.argv[2]
-manifest = json.loads(pathlib.Path(f"/tmp/{module_id}/{module_id}/module.json").read_text())
-assert manifest["id"] == module_id
-assert manifest["version"] == version
-PYVERIFY
+            python3 -c 'import json,pathlib,sys; module_id,version=sys.argv[1],sys.argv[2]; manifest=json.loads(pathlib.Path(f"/tmp/{module_id}/{module_id}/module.json").read_text()); assert manifest["id"]==module_id; assert manifest["version"]==version' "$id" "$VERSION"
           done
 
       - name: Publish release
