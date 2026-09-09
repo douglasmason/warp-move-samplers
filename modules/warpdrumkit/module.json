@@ -2,7 +2,7 @@
   "id": "warpdrumkit",
   "name": "Drum Kit+",
   "abbrev": "DK+",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Move Drum Kit-style shell with an extra per-pad Warp bank",
   "author": "douglasmason",
   "license": "MIT",
