@@ -15,7 +15,7 @@ class A(ctypes.Structure):_fields_=[('api_version',ctypes.c_uint32),('create_ins
 mem=(ctypes.c_uint8*512)();host=H(2,SR,128,mem,0,0,log,midi,midi)
 def api(path):
     l=ctypes.CDLL(str(path));f=l.move_plugin_init_v2;f.argtypes=[ctypes.POINTER(H)];f.restype=ctypes.POINTER(A);return l,f(ctypes.byref(host)).contents
-def get(a,i,k):b=ctypes.create_string_buffer(128);assert a.get_param(i,k.encode(),b,128)>=0;return b.value.decode()
+def get(a,i,k):\n    size=16384 if k in ('chain_params','ui_hierarchy','state') else 512\n    b=ctypes.create_string_buffer(size);assert a.get_param(i,k.encode(),b,size)>=0;return b.value.decode()
 l,a=api(R/'build/host/melodic_dsp.so');i=a.create_instance(str(R/'modules/warpmrsample').encode(),b'{}');a.set_param(i,b'sample_path',str(wav).encode());assert get(a,i,'root_note')=='69';import json as _json;assert len(_json.loads(get(a,i,'chain_params')))>=10;assert 'levels' in _json.loads(get(a,i,'ui_hierarchy'));assert 'sample_path' in _json.loads(get(a,i,'state'));a.set_param(i,b'length_pct',b'150');assert abs(float(get(a,i,'length_ms'))-750)<1;a.set_param(i,b'length_ms',b'250');assert abs(float(get(a,i,'length_pct'))-50)<1;a.destroy_instance(i);print('melodic ABI ok')
 l2,d=api(R/'build/host/drums_dsp.so');i=d.create_instance(str(R/'modules/warpmrdrums').encode(),b'{}');d.set_param(i,b'p01_sample_path',str(wav).encode());d.set_param(i,b'slice_count',b'2');d.set_param(i,b'slice',b'1');
 for p in (1,2):d.set_param(i,b'current_pad',str(p).encode());assert get(d,i,'pad_root_note')=='69';assert abs(float(get(d,i,'pad_grain_ms'))-45)<.1;assert get(d,i,'pad_warp')=='on'
