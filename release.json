@@ -1,27 +1,27 @@
 {
-  "version": "0.1.2",
+  "version": "0.1.3",
   "name": "Melodic Sampler+",
-  "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.2/warpmelodic-v0.1.2-module.tar.gz",
+  "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.3/warpmelodic-v0.1.3-module.tar.gz",
   "modules": {
     "warpmrsample": {
-      "version": "0.1.2",
+      "version": "0.1.3",
       "name": "WarpMrSample",
-      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.2/warpmrsample-v0.1.2-module.tar.gz"
+      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.3/warpmrsample-v0.1.3-module.tar.gz"
     },
     "warpmelodic": {
-      "version": "0.1.2",
+      "version": "0.1.3",
       "name": "Melodic Sampler+",
-      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.2/warpmelodic-v0.1.2-module.tar.gz"
+      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.3/warpmelodic-v0.1.3-module.tar.gz"
     },
     "warpmrdrums": {
-      "version": "0.1.2",
+      "version": "0.1.3",
       "name": "WarpMrDrums",
-      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.2/warpmrdrums-v0.1.2-module.tar.gz"
+      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.3/warpmrdrums-v0.1.3-module.tar.gz"
     },
     "warpdrumkit": {
-      "version": "0.1.2",
+      "version": "0.1.3",
       "name": "Drum Kit+",
-      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.2/warpdrumkit-v0.1.2-module.tar.gz"
+      "download_url": "https://github.com/douglasmason/warp-move-samplers/releases/download/v0.1.3/warpdrumkit-v0.1.3-module.tar.gz"
     }
   }
 }
