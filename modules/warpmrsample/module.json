@@ -2,7 +2,7 @@
   "id": "warpmrsample",
   "name": "WarpMrSample",
   "abbrev": "WMS",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MrSample-style chromatic sampler with cached constant-duration pitch mapping",
   "author": "douglasmason",
   "license": "MIT",
