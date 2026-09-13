@@ -1,4 +1,8 @@
-# Warp Move Samplers — v0.1.1 hardware-test candidate
+# Warp Move Samplers — experimental prototype
+
+**Audit status:** not ready for uninterrupted device use. See [AUDIT.md](AUDIT.md)
+for verified defects, fixes, test coverage, and outstanding audio-thread, memory,
+and persistence blockers. Prior prewarming claims do not establish realtime safety.
 
 Four Schwung sound-generator shells sharing two DSP implementations:
 

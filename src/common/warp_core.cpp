@@ -26,12 +26,18 @@ static int32_t i24le(const uint8_t *p) { int32_t v=int32_t(p[0])|(int32_t(p[1])<
 bool read_wav(const std::string &path, AudioBuffer &out, std::string &err) {
     std::ifstream f(path, std::ios::binary);
     if (!f) { err = "Could not open WAV: " + path; return false; }
+    f.seekg(0, std::ios::end);
+    const auto file_size = f.tellg();
+    f.seekg(0);
     uint8_t h[12]; f.read((char*)h, 12);
     if (f.gcount()!=12 || std::memcmp(h,"RIFF",4) || std::memcmp(h+8,"WAVE",4)) { err="Not a RIFF/WAVE file"; return false; }
     uint16_t fmt=0,ch=0,bits=0,align=0; uint32_t sr=0,data_size=0; std::streampos data_pos{}; bool have_fmt=false,have_data=false;
     while (f) {
         uint8_t c[8]; f.read((char*)c,8); if(f.gcount()!=8) break;
         uint32_t n=u32le(c+4); auto pos=f.tellg();
+        if (pos < 0 || pos > file_size || uint64_t(n) > uint64_t(file_size-pos)) {
+            err="Truncated WAV chunk"; return false;
+        }
         if (!std::memcmp(c,"fmt ",4)) {
             std::vector<uint8_t> b(std::max<uint32_t>(16,n)); f.read((char*)b.data(), n);
             if (n<16) { err="Corrupt fmt chunk"; return false; }
@@ -42,6 +48,9 @@ bool read_wav(const std::string &path, AudioBuffer &out, std::string &err) {
     }
     if(!have_fmt||!have_data||ch<1||ch>2||align<1||sr<1000){err="Unsupported WAV layout";return false;}
     if(!((fmt==1&&(bits==8||bits==16||bits==24||bits==32))||(fmt==3&&bits==32))){err="Need PCM8/16/24/32 or float32 WAV";return false;}
+    if (align != ch*(bits/8) || data_size%align) {
+        err="Invalid WAV block alignment"; return false;
+    }
     int frames=int(data_size/align); if(frames<1){err="Empty WAV";return false;}
     f.clear(); f.seekg(data_pos); std::vector<uint8_t> raw(data_size); f.read((char*)raw.data(),data_size); if((uint32_t)f.gcount()!=data_size){err="Short WAV data";return false;}
     out=AudioBuffer{}; out.frames=frames; out.channels=ch; out.sample_rate=sr; out.data.resize((size_t)frames*ch);
@@ -134,7 +143,7 @@ static AudioBuffer render_bungee(const AudioBuffer &src, float semitones, int ta
 
     int written = 0;
     int safety = std::max(target_frames * 2, 10000);
-    while (written < target_frames && req.position < double(src.frames) && safety-- > 0) {
+    while (written < target_frames && safety-- > 0) {
         Bungee::InputChunk chunk = stretcher.specifyGrain(req);
         int len = chunk.end - chunk.begin;
         std::fill(grain.begin(), grain.end(), 0.0f);
@@ -147,9 +156,21 @@ static AudioBuffer render_bungee(const AudioBuffer &src, float semitones, int ta
         int mute_tail = std::max(0, chunk.end - src.frames);
         stretcher.analyseGrain(grain.data(), max_grain, mute_head, mute_tail);
         Bungee::OutputChunk oc{}; stretcher.synthesiseGrain(oc);
-        int copy = std::min(oc.frameCount, target_frames-written);
+        // Preroll chunks have no valid source position yet. Do not append
+        // them: doing so includes the warm-up and truncates the real tail.
+        int skip = oc.frameCount;
+        if (oc.request[0] && oc.request[1]) {
+            const double begin = oc.request[0]->position;
+            const double end = oc.request[1]->position;
+            if (std::isfinite(begin) && std::isfinite(end) && end > begin) {
+                skip = clampi(int(std::lround(std::max(0.0, -begin) *
+                                             oc.frameCount / (end - begin))),
+                              0, oc.frameCount);
+            }
+        }
+        int copy = std::min(oc.frameCount-skip, target_frames-written);
         for (int i=0;i<copy;i++) for(int c=0;c<src.channels;c++)
-            out.data[size_t(written+i)*src.channels+c] = oc.data[i + c*oc.channelStride];
+            out.data[size_t(written+i)*src.channels+c] = oc.data[skip+i + c*oc.channelStride];
         written += copy;
         stretcher.next(req); req.reset = false;
     }
@@ -178,7 +199,7 @@ AudioBuffer render_constant_duration(const AudioBuffer&src,float semitones,int t
 }
 
 std::string midi_note_name_ableton(int midi){static const char*nn[]={"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};midi=clampi(midi,0,127);int oct=midi/12-2;std::ostringstream s;s<<nn[midi%12]<<oct;return s.str();}
-int parse_midi_note(const std::string&s,int fb){if(s.empty())return fb;char*e=nullptr;long n=std::strtol(s.c_str(),&e,10);if(e&&*e==' ')return clampi(int(n),0,127);static const char*nn[]={"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};std::string u=s;for(char&c:u)if(c=='b'){};int pc=-1,cons=0;for(int i=0;i<12;i++){std::string q=nn[i];if(u.rfind(q,0)==0&&int(q.size())>cons){pc=i;cons=q.size();}}if(pc<0)return fb;try{int oct=std::stoi(u.substr(cons));return clampi((oct+2)*12+pc,0,127);}catch(...){return fb;}}
+int parse_midi_note(const std::string&s,int fb){if(s.empty())return fb;char*e=nullptr;long n=std::strtol(s.c_str(),&e,10);if(e&&*e=='\0')return clampi(int(n),0,127);static const char*nn[]={"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};std::string u=s;for(char&c:u)if(c=='b'){};int pc=-1,cons=0;for(int i=0;i<12;i++){std::string q=nn[i];if(u.rfind(q,0)==0&&int(q.size())>cons){pc=i;cons=q.size();}}if(pc<0)return fb;try{int oct=std::stoi(u.substr(cons));return clampi((oct+2)*12+pc,0,127);}catch(...){return fb;}}
 
 void CachedSample::set_source(AudioBuffer a){source=std::move(a);state.trim_start=0;state.trim_end=1;if(state.anchor==LengthAnchor::Percent){state.length_percent=100;}reconcile_length(state,trimmed_ms(),state.anchor);invalidate();}
 float CachedSample::trimmed_ms()const{return duration_ms(trim_audio(source,state.trim_start,state.trim_end));}
@@ -194,7 +215,7 @@ void CachedSample::prewarm(int low_note,int high_note,int output_sr){
     int hi=clampi(std::max(low_note,high_note),0,127);
     for(int note=lo;note<=hi;note++)get_or_render(note,output_sr);
 }
-const AudioBuffer* CachedSample::get_or_render(int note,int output_sr){note=clampi(note,0,127);if(!state.warp)return nullptr;auto&e=cache.notes[note];if(e.valid)return &e.audio;AudioBuffer t=trim_audio(source,state.trim_start,state.trim_end);if(t.frames<=0)return nullptr;if(t.sample_rate!=output_sr){ // normalize source sample rate first without changing pitch/time materially
+const AudioBuffer* CachedSample::get_or_render(int note,int output_sr){note=clampi(note,0,127);if(!state.warp)return nullptr;auto&e=cache.notes[note];if(e.valid&&e.audio.sample_rate==output_sr)return &e.audio;AudioBuffer t=trim_audio(source,state.trim_start,state.trim_end);if(t.frames<=0)return nullptr;if(t.sample_rate!=output_sr){ // normalize source sample rate first without changing pitch/time materially
         int n=std::max(2,int(std::lround(double(t.frames)*output_sr/t.sample_rate)));AudioBuffer r;r.frames=n;r.channels=t.channels;r.sample_rate=output_sr;r.data.resize(size_t(n)*r.channels);for(int c=0;c<r.channels;c++){std::vector<float>x(t.frames);for(int i=0;i<t.frames;i++)x[i]=t.data[size_t(i)*t.channels+c];auto y=resample_linear(x,n);for(int i=0;i<n;i++)r.data[size_t(i)*r.channels+c]=y[i];}t=std::move(r);}
     float semis=float(note-state.root_note+transpose)+fine_cents/100.f;e.audio=render_constant_duration(t,semis,target_frames(output_sr),state.grain_ms);e.valid=true;e.midi_note=note;return &e.audio;}
 

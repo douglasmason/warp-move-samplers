@@ -1,0 +1,10 @@
+/build/
+/dist/
+/vendor
+/tests/test_core
+/tests/test_warp
+/tests/a440_test.wav
+__pycache__/
+/modules/*/slices/
+/modules/*/recordings/
+/core

@@ -28,6 +28,9 @@ jobs:
       - name: Fetch pinned Bungee
         run: ./scripts/fetch_bungee.sh
 
+      - name: Verify production renderer
+        run: ./tests/run_production.sh
+
       - name: Build ARM64 modules
         env:
           CROSS_PREFIX: aarch64-linux-gnu-
