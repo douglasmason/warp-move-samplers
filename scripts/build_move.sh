@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+"$ROOT/scripts/fetch_json.sh"
 IMAGE=warp-move-builder
 if [ -z "${CROSS_PREFIX:-}" ] && [ ! -f /.dockerenv ]; then
   [ -d "$ROOT/vendor/bungee/submodules/pffft" ] || { echo "Bungee not vendored. Run ./scripts/fetch_bungee.sh first."; exit 1; }
@@ -22,7 +23,7 @@ for src in "$B"/src/*.cpp; do
     -Deigen_assert=BUNGEE_ASSERT1 -DEIGEN_DONT_PARALLELIZE=1 '-DBUNGEE_VERSION="0.0.0"' -c "$src" -o "$obj"
 done
 ${CROSS_PREFIX}ar rcs "$ROOT/build/move/bungee/libbungee.a" "$ROOT/build/move/bungee"/*.o
-FLAGS=(-O3 -shared -fPIC -std=c++20 -DWARP_USE_BUNGEE -I"$ROOT/src/common" -I"$B")
+FLAGS=(-O3 -shared -fPIC -fvisibility=hidden -pthread -std=c++20 -DWARP_USE_BUNGEE -I"$ROOT/src/common" -I"$B")
 ${CROSS_PREFIX}g++ "${FLAGS[@]}" "$ROOT/src/common/warp_core.cpp" "$ROOT/src/melodic/plugin.cpp" "$ROOT/build/move/bungee/libbungee.a" -lm -o "$ROOT/build/move/melodic_dsp.so"
 ${CROSS_PREFIX}g++ "${FLAGS[@]}" "$ROOT/src/common/warp_core.cpp" "$ROOT/src/drums/plugin.cpp" "$ROOT/build/move/bungee/libbungee.a" -lm -o "$ROOT/build/move/drums_dsp.so"
 for id in warpmrsample warpmelodic warpmrdrums warpdrumkit; do mkdir -p "$ROOT/dist/$id"; cp "$ROOT/modules/$id/module.json" "$ROOT/dist/$id/module.json"; done

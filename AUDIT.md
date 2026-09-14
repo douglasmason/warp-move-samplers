@@ -1,4 +1,41 @@
-# Warp sampler implementation audit
+# Warp sampler audit: v0.2.0 disposition
+
+The historical v0.1.3 findings below motivated the v0.2.0 engine replacement.
+The active implementation is `src/common/sampler_engine.h`; both presentation
+families use it. Source, cache, state serialization, file I/O, analysis and
+recording finalization are worker-owned. MIDI, parameter and render callbacks
+use fixed queues and hazard-protected immutable snapshots. Four instance slots
+and capture buffers are reserved per loaded DSP; the worker starts during plugin
+initialization with explicit SCHED_OTHER scheduling and Move cores 0–2 affinity.
+Instance destruction queues cleanup instead of freeing audio on the callback.
+Plugin unload joins the worker once before code is unloaded.
+
+| Historical blocker | v0.2.0 disposition |
+| --- | --- |
+| Blocking preparation and file I/O | Moved to background worker; performance callbacks tested for zero C++ allocations/deallocations. |
+| Unlimited audio caches | Shared 64 MiB audio budget, eviction across instances, 12 MiB per render limit; constrained-budget regression with pinned notes. |
+| Missing state restore | Both engines round-trip paths, globals, all pad settings and duration anchors; JSON escaping; unique recorded/sliced assets. |
+| Mutable held-note audio | Per-voice hazard retains immutable snapshot and buffer; edits affect subsequent notes. |
+| Drum one-shot decay | Implemented, with zero meaning no one-shot decay. Other instrument parity work remains outside this release. |
+| Device verification | Still requires hardware testing; no claim of an on-device audio-deadline or Movy validation. |
+
+An uncached note uses immediate conventional playback while the worker prepares
+its warped version. It is never replayed late. Background preparation is visible
+as Preparing. Recording automatically finalizes at the fixed 30-second limit.
+Asset memory remains capped even when held voices prevent further preparation;
+then preparation reports a limit and source playback remains available.
+
+The two shared engines replace duplicated implementations. They retain the four
+module IDs. The checks cover both the dependency-free renderer and Bungee, state
+with escaped paths, per-pad metadata, hardware-control filtering, gate release,
+live edits, recording files, instance cleanup, and constrained memory. Bungee's
+54 stereo cases provide 108 independent channel checks. Actual device integration
+is the remaining release qualification described in README.md.
+
+---
+
+# Historical v0.1.3 findings (before the v0.2.0 replacement)
+
 
 Reviewed against repository commit `25fedf95f941598d852d7350adc9170af7319cba`
 and the available Schwung host API and module documentation.

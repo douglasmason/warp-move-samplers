@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  VERSION: 0.1.3
+  VERSION: 0.2.0
 
 jobs:
   release:
@@ -63,5 +63,5 @@ jobs:
           else
             gh release create "v${VERSION}" "${assets[@]}" \
               --title "Warp Move Samplers v${VERSION}" \
-              --notes "Four Schwung sampler variants with constant-duration warped pitch playback."
+              --notes "v0.2.0 hardware-test release: background sample preparation, bounded caches, immutable held-note audio, full state restoration, and production Bungee regression tests. See README for preparation behavior and device validation limits."
           fi

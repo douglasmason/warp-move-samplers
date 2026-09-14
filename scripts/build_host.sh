@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+"$ROOT/scripts/fetch_json.sh"
 mkdir -p "$ROOT/build/host"
 CXX="${CXX:-g++}"
-COMMON=(-O2 -fPIC -std=c++17 -I"$ROOT/src/common")
+COMMON=(-O2 -fPIC -fvisibility=hidden -pthread -std=c++17 -I"$ROOT/src/common")
 EXTRA=()
 LIBS=(-lm)
 if [ "${USE_BUNGEE:-0}" = "1" ]; then
@@ -19,7 +20,7 @@ if [ "${USE_BUNGEE:-0}" = "1" ]; then
       -Deigen_assert=BUNGEE_ASSERT1 -DEIGEN_DONT_PARALLELIZE=1 '-DBUNGEE_VERSION="0.0.0"' -c "$src" -o "$obj"
   done
   ar rcs "$ROOT/build/host/bungee/libbungee.a" "$ROOT/build/host/bungee"/*.o
-  COMMON=(-O2 -fPIC -std=c++20 -DWARP_USE_BUNGEE -I"$ROOT/src/common" -I"$B")
+  COMMON=(-O2 -fPIC -fvisibility=hidden -pthread -std=c++20 -DWARP_USE_BUNGEE -I"$ROOT/src/common" -I"$B")
   LIBS=("$ROOT/build/host/bungee/libbungee.a" -lm)
 fi
 "$CXX" "${COMMON[@]}" -shared "$ROOT/src/common/warp_core.cpp" "$ROOT/src/melodic/plugin.cpp" -o "$ROOT/build/host/melodic_dsp.so" "${LIBS[@]}"

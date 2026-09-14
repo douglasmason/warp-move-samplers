@@ -1,166 +1,95 @@
-# Warp Move Samplers — experimental prototype
+# Warp Move Samplers — v0.2.0
 
-**Audit status:** not ready for uninterrupted device use. See [AUDIT.md](AUDIT.md)
-for verified defects, fixes, test coverage, and outstanding audio-thread, memory,
-and persistence blockers. Prior prewarming claims do not establish realtime safety.
+Four Schwung sound generators for cached pitch shifting with independent sample
+duration. Install using this repository in Schwung Manager:
 
-Four Schwung sound-generator shells sharing two DSP implementations:
+https://github.com/douglasmason/warp-move-samplers
 
-1. **WarpMrSample** — MrSample-inspired chromatic single-sample instrument.
-2. **Melodic Sampler+** (`warpmelodic`) — same engine, control order/name intended to feel familiar to stock Move Melodic Sampler users.
-3. **WarpMrDrums** — 16-pad sampler with independent per-pad warp state.
-4. **Drum Kit+** (`warpdrumkit`) — same drum engine, stock-like control order plus an extra Warp bank.
+| Module ID | Instrument |
+| --- | --- |
+| `warpmelodic` | Melodic Sampler+ |
+| `warpmrsample` | WarpMrSample |
+| `warpdrumkit` | Drum Kit+ |
+| `warpmrdrums` | WarpMrDrums |
 
-The goal is the workflow discussed in the chat: record/load one pitched sound, determine/store its root, then play pitch-mapped notes/chords whose cached renders all have the **same requested duration**.
+The two melodic presentations share an engine, as do the two drum presentations.
+These are additional Schwung instruments, with stock-like control layouts. They
+are not replacements for Ableton's native devices or complete MrSample/MrDrums
+feature ports. Movy can use them through its Schwung instrument integration.
 
-## Install with Schwung Manager
+## Start playing
 
-This repository is prepared as a **multi-module release**. In Schwung Manager, add the GitHub repository and select the desired module ID:
+1. Install one of the modules above and select it as a Schwung sound generator.
+2. Open **Sample** (melodic) or **Pad** (drums) and choose a WAV. Drum versions
+   use **Current Pad** to select the pad whose sample and settings you edit.
+3. Wait for **Status** in **Capture** to leave **Preparing**. Automatic root
+   detection runs when loading or recording. Correct **Root Note** if needed.
+   MIDI 60 is shown as C3 in Ableton's octave convention.
+4. With **Warp On**, change **Length %** or **Length ms** independently of pitch.
+   The last duration representation edited stays anchored when changing trim.
+5. For drums, ordinary notes 36–51 trigger pads 1–16. Enable **Pitched Mode** to
+   play the selected pad chromatically. **Mode** selects one-shot or gate;
+   **Decay** shapes one-shot decay or gate release (zero disables one-shot decay).
+6. **Record** in Capture starts/stops recording from Schwung's current input.
+   Capture stops automatically at 30 seconds and saves on the background worker.
+   Selecting another pad while recording does not change the recording target.
 
-- `warpmrsample` — WarpMrSample
-- `warpmelodic` — Melodic Sampler+
-- `warpmrdrums` — WarpMrDrums
-- `warpdrumkit` — Drum Kit+
+Auto Root and Default Root are instrument-wide ingest policies. Root, trim,
+warp, length, grain, envelope and drum playback controls belong to each sample
+or pad. Slice Analyze chooses per-slice analysis versus inheriting the parent's
+root. Slice makes equal-length slices starting at the selected pad and wrapping
+through the 16 pads. Each slice starts at 100 percent length.
 
-`release.json` points each ID to its own ARM64 release asset.
+## Preparation and live edits
 
-### Realtime cache behavior
+File I/O, analysis, slicing and Bungee rendering run on a low-priority worker.
+Playback callbacks enqueue bounded requests and read immutable audio; a held
+note keeps its original buffer and playback settings during edits.
 
-Loading or recording a pitched sample now pre-renders the normal **root ±12 semitone** playing range before the module reports Ready. Entering drum Pitched Mode also prepares that range for the selected pad. This keeps ordinary note-on events inside the prepared range from doing Bungee rendering work in the realtime MIDI path. Notes outside that range are still rendered lazily in v0.1.1; hardware testing will tell us whether to expand the prepared range or move cache generation to a worker.
+The melodic instrument prepares root ±12 semitones in the background. Drums
+prepare each pad's root, and the selected pad's ±12 range in Pitched Mode. If a
+note has no prepared render, it sounds immediately using conventional sample-rate
+transposition while its warped version is requested. Subsequent triggers use the
+prepared audio. The first uncached note therefore may have a different duration;
+it is never delayed and replayed later. Watch **Preparing**, especially after
+changing length, root, trim or tuning.
 
-The test runner now executes the pitch/duration warp invariant test as well as the host ABI tests.
+Audio sources and cached renders share a 64 MiB budget across up to four instances
+of a loaded DSP module. Unused cached pitches are evicted to make room; held notes
+retain their buffers. Recording buffers have a separate fixed bound. WAV input
+is limited to 30 seconds and 12 MiB decoded audio, and an individual warped render
+to 12 MiB. If pinned audio prevents preparation, an error is reported and notes
+continue with available source playback. Shorten Length or release held notes.
 
-## Parameter model
+Grain Size uses three Bungee density bands: below 25 ms, 25–90 ms, and above 90 ms.
+It is not a continuous millisecond grain-size control.
 
-### Instrument-level ingest policy
+## Saving
 
-- **Auto Root** — applied when a new recording/file arrives.
-- **Default Root** — used when Auto Root is off.
-- **Slice Analyze** (drum versions) — analyze each new slice independently when on; otherwise inherit the parent root.
+Both engines serialize and restore all their settings, sample paths and length
+anchors. Recorded and sliced audio uses unique filenames under each module's
+`recordings/` and `slices/` directories. Keep those directories and externally
+loaded WAVs when backing up or transferring a Set; the state references the files
+rather than embedding their audio. Move's native instrument/preset file format is
+not imported by these modules.
 
-After ingest, the root becomes ordinary **sample/pad metadata**. Auto Root is not a per-pad live switch.
+## Build and tests
 
-### Per sample / per pad playback state
+- `./tests/run.sh`: core, host ABI, all four UIs, save/restore, sanitizer,
+  callback allocation, live-edit, recording and constrained-memory tests.
+- `./scripts/fetch_bungee.sh`: pinned Bungee source and submodules.
+- `./tests/run_production.sh`: production Bungee pitch, duration, stereo, tail,
+  callback, recording and save/restore checks.
+- `./scripts/build_move.sh`: ARM64 modules using Docker or `CROSS_PREFIX`.
+- `./scripts/install_move.sh`: optional SSH installation to `move.local`.
 
-- **Warp** — default **On**.
-- **Length %** — default **100% of the trimmed region**.
-- **Length ms** — linked bidirectionally with Length %.
-- **Grain Size** — default **45 ms**.
-- **Root Note** — stored root; may be manually corrected.
-- Trim start/end.
+Builds automatically fetch the checksum-pinned nlohmann/json header. Release CI
+runs both test suites and cross-compiles all four module assets before publishing.
 
-The duration representation edited most recently is the hidden anchor. Example: if `%` was last edited, changing the trim preserves the percentage and recalculates ms. If `ms` was last edited, trim changes preserve absolute duration and recalculate `%`.
+## Validation limits
 
-## Cached playback
-
-With Warp on, playback requests a pitch-specific cached render. The cache key is effectively:
-
-`source + trim + root + requested MIDI note + transpose/fine + target duration + grain setting`
-
-Changing any of those invalidates the affected sample/pad cache. Envelope, gain, pan, choke and similar playback controls do **not** require rerendering.
-
-With Warp off, the instruments bypass the cache and use conventional sample-rate transposition, so higher notes get shorter and lower notes get longer.
-
-## Root-note naming
-
-The UI/code uses Ableton's octave convention: **MIDI 60 = C3**, so A440 / MIDI 69 displays as **A3**.
-
-The current public Schwung host ABI does not expose Move's track key/scale root to a sound-generator plugin. Therefore v0.1 cannot automatically initialize `Default Root` from the current Move input key; it defaults to **C3 (MIDI 60)**. The parameter is exposed so it can be set to the track key root manually. If Schwung adds key/scale context to the host API, this is a small hook to add.
-
-## Recording
-
-Both engines can capture Move's stereo input mailbox. The `Record` parameter toggles capture. The plugins also listen for the internal Move control event using code `118`, matching Schwung's documented Sample/Record control mapping; this hardware-button path still needs on-device verification.
-
-A finished recording is persisted under the module's `recordings/` directory, root-analyzed according to the instrument policy, and becomes the current sample/pad.
-
-## Slicing (drum versions)
-
-`Slice Count` creates equal regions from the currently selected pad's trimmed source and spreads them across pads starting at that pad. Each slice is persisted as WAV. With `Slice Analyze=On`, each gets its own detected root; otherwise it inherits the parent's root. Warp defaults and Grain Size are copied from the parent, and each new slice starts at Length=100% of its own region.
-
-## Grain Size and Bungee
-
-The **production Move build uses Bungee Basic**, the same engine already used by Schwung's `stretch` module. Bungee exposes `log2SynthesisHopAdjust` rather than an arbitrary millisecond grain length, so v0.1 maps the Grain Size knob into three HQ bands:
-
-- `< 25 ms` → denser/smaller grains (`-1`)
-- `25–90 ms` → normal (`0`)
-- `> 90 ms` → larger/sparser grains (`+1`)
-
-Thus the parameter is exposed and cache-invalidating, but it is **three effective Bungee grain-density regions**, not continuously variable milliseconds yet. A future custom renderer could make this continuous.
-
-The repository contains a dependency-free fallback renderer solely so host/API tests can run without downloading Bungee. **Do not judge production pitch quality from the fallback.** `build_move.sh` always compiles with Bungee and refuses to build without the vendored Bungee tree.
-
-## Build
-
-### 1. Run local host/API tests
-
-```bash
-./tests/run.sh
-```
-
-### 2. Vendor the pinned Bungee source + submodules
-
-```bash
-./scripts/fetch_bungee.sh
-```
-
-Pinned commit: `7354c0c62652dd85af90fddfeec307881f3b4252`.
-
-### 3. Cross-build all four modules for Move
-
-Requires Docker:
-
-```bash
-./scripts/build_move.sh
-```
-
-The script uses Debian Bookworm + GCC 12 aarch64 cross tools and follows Schwung Stretch's Bungee/pffft build flags. Successful output appears under `dist/`:
-
-- `warpmrsample-module.tar.gz`
-- `warpmelodic-module.tar.gz`
-- `warpmrdrums-module.tar.gz`
-- `warpdrumkit-module.tar.gz`
-
-The two melodic shells share one DSP binary; the two drum shells share the other.
-
-### 4. Install over SSH
-
-```bash
-./scripts/install_move.sh
-```
-
-Target path:
-
-`/data/UserData/schwung/modules/sound_generators/<module-id>/`
-
-Restart/reload Schwung afterward.
-
-## What is implemented in v0.1.1
-
-- cached constant-duration architecture
-- Bungee production renderer hook/build
-- automatic fundamental detection on ingest
-- editable stored root note
-- Warp On/Off
-- linked Length % / ms
-- per-sample/pad Grain Size
-- direct input recording
-- 16 independent drum pads
-- per-pad volume, pan, tune, trim, attack/decay, choke, gate/one-shot and chance
-- drum pitched mode for the selected pad
-- equal-region slicing with analyze-each vs inherit-root policy
-- host ABI smoke tests
-
-## Known parity gaps before calling these drop-in replacements
-
-This is a **working architectural prototype, not full MrSample/MrDrums parity yet**. In particular:
-
-- MrSample's full loop/filter/LFO/AHDSR surface is not all ported yet.
-- MrDrums native `.ablpreset` import and its random-pan/random-volume/random-decay/humanize controls are not ported yet.
-- The stock-like variants are **Schwung UI/control-order approximations**; Schwung does not provide a public API for literally reusing Ableton's native device skin.
-- The Move hardware Sample-button event and stock 16-Pitches interaction need an on-device test; the explicit `Record` and `Pitched Mode` parameters are present regardless.
-
-Those are the next compatibility pass; the new root/warp/length/cache model is isolated so they can be added without redesigning it.
-
-## Safety / recovery
-
-These are unofficial Schwung modules and are not endorsed by Ableton. Keep backups of Sets/samples and install alongside—not over—the stock instruments. The module IDs are unique, so they do not replace native Move devices.
+v0.2.0 is a release for hardware testing. Automated tests and ARM64 builds do not
+verify the actual Move audio deadline, hardware Sample-button delivery, native
+16-Pitches interaction, Set integration or Movy coexistence on a device. The
+explicit Record and Pitched Mode controls are available for testing these paths.
+See [AUDIT.md](AUDIT.md) for the original findings and their disposition.

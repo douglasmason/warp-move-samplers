@@ -8,3 +8,5 @@ __pycache__/
 /modules/*/slices/
 /modules/*/recordings/
 /core
+
+/third_party/json.hpp

@@ -2,7 +2,7 @@
   "id": "warpmrdrums",
   "name": "WarpMrDrums",
   "abbrev": "WMD",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "16-pad sampler with per-pad cached warp/root/length state",
   "author": "douglasmason",
   "license": "MIT",
@@ -28,16 +28,95 @@
       "levels": {
         "root": {
           "name": "WarpMrDrums",
-          "params": [{"label":"Pad","level":"pad"},{"label":"Warp","level":"warp"},{"label":"Capture/Slice","level":"capture"}],
-          "knobs": ["current_pad","pad_vol","pad_pan","pad_tune","pad_trim_start","pad_attack_ms","pad_decay_ms","pad_warp"]
+          "params": [
+            {
+              "label": "Pad",
+              "level": "pad"
+            },
+            {
+              "label": "Warp",
+              "level": "warp"
+            },
+            {
+              "label": "Capture/Slice",
+              "level": "capture"
+            }
+          ],
+          "knobs": [
+            "current_pad",
+            "pad_vol",
+            "pad_pan",
+            "pad_tune",
+            "pad_trim_start",
+            "pad_attack_ms",
+            "pad_decay_ms",
+            "pad_warp"
+          ]
         },
         "pad": {
           "name": "Pad",
-          "params": ["current_pad","pad_vol","pad_pan","pad_tune","pad_trim_start","pad_trim_end","pad_attack_ms","pad_decay_ms","pad_choke_group","pad_mode","pad_chance_pct"],
-          "knobs": ["pad_vol","pad_pan","pad_tune","pad_trim_start","pad_trim_end","pad_attack_ms","pad_decay_ms","pad_choke_group"]
+          "params": [
+            "current_pad",
+            "pad_vol",
+            "pad_pan",
+            "pad_tune",
+            "pad_trim_start",
+            "pad_trim_end",
+            "pad_attack_ms",
+            "pad_decay_ms",
+            "pad_choke_group",
+            "pad_mode",
+            "pad_chance_pct"
+          ],
+          "knobs": [
+            "pad_vol",
+            "pad_pan",
+            "pad_tune",
+            "pad_trim_start",
+            "pad_trim_end",
+            "pad_attack_ms",
+            "pad_decay_ms",
+            "pad_choke_group"
+          ]
         },
-        "warp": {"name":"Warp","params":["pad_warp","pad_length_pct","pad_length_ms","pad_grain_ms","pad_root_note","pitched_mode"],"knobs":["pad_warp","pad_length_pct","pad_length_ms","pad_grain_ms","pad_root_note","pitched_mode"]},
-        "capture": {"name":"Capture / Slice","params":["record","auto_root","default_root","slice_count","slice_analyze","slice"],"knobs":["record","auto_root","default_root","slice_count","slice_analyze","slice"]}
+        "warp": {
+          "name": "Warp",
+          "params": [
+            "pad_warp",
+            "pad_length_pct",
+            "pad_length_ms",
+            "pad_grain_ms",
+            "pad_root_note",
+            "pitched_mode"
+          ],
+          "knobs": [
+            "pad_warp",
+            "pad_length_pct",
+            "pad_length_ms",
+            "pad_grain_ms",
+            "pad_root_note",
+            "pitched_mode"
+          ]
+        },
+        "capture": {
+          "name": "Capture / Slice",
+          "params": [
+            "record",
+            "auto_root",
+            "default_root",
+            "slice_count",
+            "slice_analyze",
+            "slice"
+          ],
+          "knobs": [
+            "record",
+            "auto_root",
+            "default_root",
+            "slice_count",
+            "slice_analyze",
+            "slice"
+          ]
+        }
       }
     }
   }

@@ -14,7 +14,9 @@ python3 "$ROOT/tests/test_ui.py"
 for engine in melodic drums; do
   DEFINES=()
   if [ "$engine" = drums ]; then DEFINES=(-DTEST_DRUMS); fi
-  g++ -O1 -g -std=c++17 -fsanitize=address,undefined "${DEFINES[@]}" \
+  g++ -O1 -g -pthread -std=c++17 -fsanitize=address,undefined "${DEFINES[@]}" \
     src/common/warp_core.cpp tests/test_regressions.cpp -o "build/host/test_$engine"
   "build/host/test_$engine"
 done
+g++ -O1 -g -pthread -std=c++17 -fsanitize=address,undefined src/common/warp_core.cpp tests/test_memory.cpp -o build/host/test_memory
+build/host/test_memory

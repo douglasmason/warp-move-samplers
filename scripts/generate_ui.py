@@ -25,14 +25,16 @@ def descriptor(parameter: str, drums: bool) -> dict[str, Any]:
     """Return an explicit host descriptor for one supported parameter."""
     base_parameter: str = parameter.removeprefix("pad_")
     result: dict[str, Any] = {"key": parameter, "name": base_parameter.replace("_", " ").title()}
-    if base_parameter in toggle_parameters:
+    if base_parameter in {"status", "version"}:
+        result.update(type="string", access="read")
+    elif base_parameter in toggle_parameters:
         result.update(type="enum", options=["off", "on"])
     elif base_parameter == "mode":
         result.update(type="enum", options=["oneshot", "gate"])
     elif base_parameter in action_parameters:
         result.update(type="enum", options=["off", "on"], access="write")
     elif base_parameter == "sample_path":
-        result.update(type="string")
+        result.update(type="filepath", root="/data/UserData/UserLibrary/Samples", start_path="/data/UserData/UserLibrary/Samples", filter=[".wav"], live_preview=True)
     else:
         minimum: float
         maximum: float
@@ -42,6 +44,9 @@ def descriptor(parameter: str, drums: bool) -> dict[str, Any]:
         if drums and base_parameter == "attack_ms":
             maximum = 5000
         result.update(type="int" if base_parameter in integer_parameters else "float", min=minimum, max=maximum)
+        result["step"] = 0.001 if base_parameter in {"trim_start", "trim_end"} else (0.01 if base_parameter in {"gain", "vol", "pan"} else 1)
+        if base_parameter in {"trim_start", "trim_end"}:
+            result.update(ui_type="wav_position", mode="start" if base_parameter=="trim_start" else "end", filepath_param="pad_sample_path" if drums else "sample_path")
     return result
 
 
@@ -53,9 +58,10 @@ def main() -> None:
         manifest: dict[str, Any] = json.loads(manifest_path.read_text())
         module_id: str = manifest["id"]
         drums: bool = module_id in {"warpmrdrums", "warpdrumkit"}
-        if not drums:
-            continue  # Preserve the existing melodic waveform/file-browser UI.
         hierarchy: dict[str, Any] = manifest["capabilities"]["ui_hierarchy"]
+        hierarchy["levels"]["capture"]["params"].extend(["status", "version"])
+        if drums:
+            hierarchy["levels"]["pad"]["params"].insert(1, "pad_sample_path")
         map_parameter_to_descriptor: dict[str, dict[str, Any]] = {}
         level: dict[str, Any]
         for level in hierarchy["levels"].values():

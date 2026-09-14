@@ -10,6 +10,8 @@ for module_id in ("warpmrsample", "warpmelodic", "warpmrdrums", "warpdrumkit"):
     library, api = abi.api(abi.R / f"build/host/{engine}_dsp.so")
     instance: Any = api.create_instance(str(abi.R / "modules" / module_id).encode(), b"{}")
     try:
+        assert instance
+        abi.settle(api, instance)
         buffer: Any = abi.ctypes.create_string_buffer(32768)
         length: int = api.get_param(instance, b"ui_hierarchy", buffer, len(buffer))
         assert 0 < length < len(buffer)

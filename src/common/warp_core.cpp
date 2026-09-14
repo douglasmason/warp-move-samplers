@@ -52,6 +52,10 @@ bool read_wav(const std::string &path, AudioBuffer &out, std::string &err) {
         err="Invalid WAV block alignment"; return false;
     }
     int frames=int(data_size/align); if(frames<1){err="Empty WAV";return false;}
+    if (sr>192000 || uint64_t(frames)>uint64_t(sr)*30 ||
+        uint64_t(frames)*ch*sizeof(float)>12*1024*1024) {
+        err="Sample exceeds 30 seconds or 12 MB decoded audio";return false;
+    }
     f.clear(); f.seekg(data_pos); std::vector<uint8_t> raw(data_size); f.read((char*)raw.data(),data_size); if((uint32_t)f.gcount()!=data_size){err="Short WAV data";return false;}
     out=AudioBuffer{}; out.frames=frames; out.channels=ch; out.sample_rate=sr; out.data.resize((size_t)frames*ch);
     int bps=bits/8;
