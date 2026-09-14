@@ -33,6 +33,7 @@ int main() {
     uint8_t input[512]{};
     host_api_v1_t host{};host.sample_rate=44100;host.frames_per_block=128;host.mapped_memory=input;
     auto *api=move_plugin_init_v2(&host);assert(api);
+    host.sample_rate=1000;assert(sampler::sample_rate()==44100);host.sample_rate=44100;
     int scheduling_policy; sched_param scheduling_parameters{};
     assert(pthread_getschedparam(sampler::worker_thread,&scheduling_policy,&scheduling_parameters)==0);
     assert(scheduling_policy==SCHED_OTHER);

@@ -27,7 +27,8 @@ constexpr size_t kAudioBudget = SAMPLER_AUDIO_BUDGET;
 constexpr size_t kRenderLimit = 12 * 1024 * 1024;
 constexpr size_t kCaptureSamples = 48000 * 30 * 2;
 constexpr int kPathSize = 512;
-static const host_api_v1_t *host = nullptr;
+static host_api_v1_t host_copy{};
+static const host_api_v1_t *host = &host_copy;
 static bool drum_engine = false;
 static size_t audio_bytes = 0; // worker-owned, shared across instances
 static std::atomic<size_t> audio_bytes_readout{0};
@@ -609,8 +610,12 @@ static void render(void *pointer,int16_t *output,int frames) {
 }
 static plugin_api_v2_t api{2,create,destroy,midi,set_param,get_param,get_error,render};
 static plugin_api_v2_t *initialize(const host_api_v1_t *value,bool drums) {
-    host=value;drum_engine=drums;
-    if(!worker_started){pthread_attr_t attributes;pthread_attr_init(&attributes);
+    if(!value||value->sample_rate<1000||value->sample_rate>48000)return nullptr;
+    // Chain passes an instance-owned host struct. Retaining its address makes
+    // other sampler instances dangle when that chain slot is destroyed.
+    // Audio mailbox/rate are common to the process; copy that stable prefix once.
+    if(worker_started&&(value->sample_rate!=host_copy.sample_rate||value->mapped_memory!=host_copy.mapped_memory||value->audio_in_offset!=host_copy.audio_in_offset))return nullptr;
+    if(!worker_started){host_copy=*value;drum_engine=drums;pthread_attr_t attributes;pthread_attr_init(&attributes);
         pthread_attr_setinheritsched(&attributes,PTHREAD_EXPLICIT_SCHED);pthread_attr_setschedpolicy(&attributes,SCHED_OTHER);
         sched_param priority{};pthread_attr_setschedparam(&attributes,&priority);
         stopping.store(false);worker_started=pthread_create(&worker_thread,&attributes,worker,nullptr)==0;pthread_attr_destroy(&attributes);}
