@@ -2,7 +2,7 @@
   "id": "warpmelodic",
   "name": "Melodic Sampler+",
   "abbrev": "MS+",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Move Melodic Sampler-style shell with cached constant-duration pitch mapping",
   "author": "douglasmason",
   "license": "MIT",
@@ -37,14 +37,112 @@
       "levels": {
         "root": {
           "name": "Melodic Sampler+",
-          "params": [{"label":"Sample","level":"sample"},{"label":"Warp","level":"warp"},{"label":"Tuning","level":"tuning"},{"label":"Amp","level":"amp"},{"label":"Capture","level":"capture"}],
-          "knobs": ["trim_start","trim_end","attack_ms","release_ms","gain","transpose","grain_ms","length_pct"]
+          "params": [
+            {
+              "label": "Sample",
+              "level": "sample"
+            },
+            {
+              "label": "Warp",
+              "level": "warp"
+            },
+            {
+              "label": "Tuning",
+              "level": "tuning"
+            },
+            {
+              "label": "Amp",
+              "level": "amp"
+            },
+            {
+              "label": "Capture",
+              "level": "capture"
+            }
+          ],
+          "knobs": [
+            "trim_start",
+            "trim_end",
+            "attack_ms",
+            "release_ms",
+            "gain",
+            "transpose",
+            "grain_ms",
+            "length_pct"
+          ]
         },
-        "sample": {"name":"Sample","params":["sample_path","trim_start","trim_end"],"knobs":["trim_start","trim_end"]},
-        "warp": {"name":"Warp","params":["warp","length_pct","length_ms","grain_ms","root_note","rebuild_cache"],"knobs":["warp","length_pct","length_ms","grain_ms","root_note"]},
-        "tuning": {"name":"Tuning","params":["root_note","transpose","fine_tune"],"knobs":["root_note","transpose","fine_tune"]},
-        "amp": {"name":"Amp","params":["attack_ms","release_ms","gain","polyphony"],"knobs":["attack_ms","release_ms","gain","polyphony"]},
-        "capture": {"name":"Capture / Root","params":["record","auto_root","default_root","analyze_root"],"knobs":["record","auto_root","default_root","analyze_root"]}
+        "sample": {
+          "name": "Sample",
+          "params": [
+            "sample_path",
+            "trim_start",
+            "trim_end"
+          ],
+          "knobs": [
+            "trim_start",
+            "trim_end"
+          ]
+        },
+        "warp": {
+          "name": "Warp",
+          "params": [
+            "warp",
+            "length_pct",
+            "length_ms",
+            "grain_ms",
+            "root_note",
+            "rebuild_cache"
+          ],
+          "knobs": [
+            "warp",
+            "length_pct",
+            "length_ms",
+            "grain_ms",
+            "root_note"
+          ]
+        },
+        "tuning": {
+          "name": "Tuning",
+          "params": [
+            "root_note",
+            "transpose",
+            "fine_tune"
+          ],
+          "knobs": [
+            "root_note",
+            "transpose",
+            "fine_tune"
+          ]
+        },
+        "amp": {
+          "name": "Amp",
+          "params": [
+            "attack_ms",
+            "release_ms",
+            "gain",
+            "polyphony"
+          ],
+          "knobs": [
+            "attack_ms",
+            "release_ms",
+            "gain",
+            "polyphony"
+          ]
+        },
+        "capture": {
+          "name": "Capture / Root",
+          "params": [
+            "record",
+            "auto_root",
+            "default_root",
+            "analyze_root"
+          ],
+          "knobs": [
+            "record",
+            "auto_root",
+            "default_root",
+            "analyze_root"
+          ]
+        }
       }
     }
   }

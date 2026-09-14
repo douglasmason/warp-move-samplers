@@ -1,0 +1,25 @@
+name: Verify sampler behavior and ARM64 build
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ python3 file git ca-certificates gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - name: Host behavior and sanitizer tests
+        run: ./tests/run.sh
+      - name: Fetch pinned Bungee
+        run: ./scripts/fetch_bungee.sh
+      - name: Test production Bungee renderer
+        run: ./tests/run_production.sh
+      - name: Compile ARM64 modules
+        env:
+          CROSS_PREFIX: aarch64-linux-gnu-
+        run: ./scripts/build_move.sh
